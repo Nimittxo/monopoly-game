@@ -2,7 +2,7 @@
 
 // Add NotFoundException and UnauthorizedException to this import line
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { GameState, Player } from './game.models';
+import { GameState, Player, PropertySquare } from './game.models';
 import { INITIAL_BOARD } from './board.data';
 import { randomUUID } from 'crypto';
 import * as _ from 'lodash';
@@ -60,11 +60,57 @@ export class GameService {
       console.log(`${player.name} passed GO and collected $200.`);
       player.money += 200;
     }
+    this._handleLandingOnSquare(player);
 
     const currentPlayerIndex = this.gameState.players.findIndex((p) => p.id === playerId);
     const nextPlayerIndex = (currentPlayerIndex + 1) % this.gameState.players.length;
     this.gameState.currentPlayerTurnId = this.gameState.players[nextPlayerIndex].id;
     
     return { die1, die2 };
+  }
+
+  private _handleLandingOnSquare(player: Player) {
+    if (!this.gameState) return;
+
+    const square = this.gameState.board[player.position];
+    console.log(`${player.name} landed on ${square.name}`);
+
+    switch (square.type) {
+      case 'property':
+        if (square.ownerId && square.ownerId !== player.id) {
+          // If the property is owned by another player, pay rent
+          this._payRent(player, square);
+        } else if (!square.ownerId) {
+          // If unowned, for now we just log a message. Later, we'll give the player a choice.
+          console.log(`Property ${square.name} is unowned. Player has the option to buy.`);
+        }
+        break;
+      
+      case 'tax':
+        console.log(`${player.name} pays $${square.amount} in tax.`);
+        player.money -= square.amount;
+        break;
+
+      // We will add more cases for railroad, utility, card, etc. later
+      default:
+        console.log(`Landed on a ${square.type} square. No action yet.`);
+        break;
+    }
+  }
+
+
+  private _payRent(player: Player, square: PropertySquare) {
+    if (!this.gameState) return;
+
+    const owner = this.gameState.players.find(p => p.id === square.ownerId);
+    if (!owner) return;
+
+    // For now, we'll use the base rent (rent for 0 houses)
+    const rentAmount = square.rent[0]; 
+    
+    player.money -= rentAmount;
+    owner.money += rentAmount;
+
+    console.log(`${player.name} paid $${rentAmount} rent to ${owner.name}.`);
   }
 }
