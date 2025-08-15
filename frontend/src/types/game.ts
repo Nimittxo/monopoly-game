@@ -14,4 +14,5 @@ export interface GameState {
   board: any[]; // Using `any` for now, can be replaced with detailed types later
   currentPlayerTurnId: string;
   gameStatus: 'waiting' | 'in-progress' | 'finished';
+  isBot?: boolean;
 }

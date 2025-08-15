@@ -67,6 +67,7 @@ export interface Player {
   name: string;
   money: number;
   position: number;
+  isBot?: boolean;
 }
 
 export interface GameState {
@@ -75,4 +76,9 @@ export interface GameState {
   board: AnyBoardSquare[];
   currentPlayerTurnId: string;
   gameStatus: 'waiting' | 'in-progress' | 'finished';
+  actionRequired?: {
+    playerId: string;
+    type: 'buy-property';
+    squareId: string;
+  } | null;
 }
